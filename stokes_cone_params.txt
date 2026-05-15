@@ -1,0 +1,343 @@
+Version
+-------
+
+Version 1.0.
+
+This version contains first release of the cone geometry in reflection,
+which is a different flavor of the XSPEC model "stokes_torus" v2.0. It
+does not contain the trTheta parameter, but provides Theta in degrees
+directly.
+
+Refer to Podgorný J. (2025) regarding the definition and model behavior
+of all parameters in this release.
+
+
+Model description
+-----------------
+
+This 0.1-100 keV model computes the emission and its polarisation properties
+from an X-ray source of power-law emission of arbitrary incident polarisation
+that is reprocessed in axially symmetric structures. The reprocessing
+is precomputed in a form of FITS fits files that are required for
+usage. These files were computed for three different states
+of incident polarisation for isotropic illumination, allowing
+interpolation for any primary polarisation state; and one predefined
+anisotropic polarisation and anisotropic angular distribution of
+illumination, characteristic of a slab corona (for more details, see
+Podgorný J., 2025). In addition it possesses other properties of the
+local reprocessing tables that were precomputed for partially ionized
+disc reflection (Podgorný J. et al., 2022), as well as fully neutral
+disc reflection (Podgorný J., 2025). Option to reflect from a fully
+ionized surface with 100% albedo and polarization predictions according
+to the diffuse Chandrasekhar's electron-scattering atmosphere is allowed.
+
+In the case of stokes_cone, reflection is calculated from an optically-thick
+double-cone shaped toroidal structure, representing e.g. an opaque AGN torus,
+broad-line region, or a super-Eddington accretion funnel or optically thick
+wind, illuminated by a central hot X-ray corona. More details on the
+reflection model that was computed using the routine torus_integrator.py are
+given in Podgorný J. et al. (2024) and Podgorný J. (2025). Apart from the
+incident power-law index Gamma and its polarisation degree and angle, the
+model then also depends on the cosine of observer's inclination angle, the
+half-opening angle of the double-cone reflector (see Podgorný J. et al., 2024,
+for details, or below), the skew of the inner walls, the ionization parameter
+xi0 at the inner edge of the reflector, the ionization profile's power-law index
+beta, the position angle on the sky, and the overall redshift. The primary
+radiation can be added with a switch N_p, if the source is not obscured. No
+relativistic effects inside the system are taken into account. All components
+are static. The central source is a point-like emission. The output is
+normalized according to the distance of the reflector from the center,
+the distance to the source, and the expected density at the inner edge.
+Several helpful parameters can be obtained from the model via the XSET
+command (see below).
+
+CAUTION: the model is currently public in a limited version with low resolution
+in the reprocessing parameters. In the future, we aim to update it with higher
+resolution in "rhorhoin" (par4), "xi0" (par5), "beta" (par6), and we aim to make
+it accordingly better optimized for memory usage. Currently, the model loads
+different precomputed tables for different values of "beta" (only beta = -2,
+2, 6 are allowed and this parameter should not be fitted). In order to prevent
+extensive memory consumption, one should not switch between different discrete
+"beta" values within a single XSPEC session, as new tables are added to the
+allocated memory each time after a switch. The same holds for switching between
+"xi0" < 0, 0 < "xi0" < 5, and "xi0" >= 5; however within these three ranges one
+can interpolate and fit without extra memory consumption. The same holds for
+switching between "pol_deg" = -1 and 0 <= "pol_deg" <= 1; however within the
+second mode one can interpolate and fit without extra memory consumption.
+In the future, we would like to restore the B switch that allows to remove
+reflection below the double-cone equator. Currently, all configurations are
+computed for B = 1 (with reflection from below the equator included, which matters
+only for polarization in certain regions of the parameter space).
+
+For any issues regarding the use of stokes_cone, please, contact J. Podgorný at
+jakub.podgorny@asu.cas.cz or M. Dovčiak at michal.dovciak@asu.cas.cz.
+
+
+References
+----------
+
+Podgorný J, Dovčiak M, Marin F, Goosmann RW and Różańska A (2022)
+Spectral and polarization properties of reflected X-ray emission from black hole accretion discs
+MNRAS, 510, pp.4723-4735
+(https://arxiv.org/abs/2201.07494)
+
+Podgorný J, Dovčiak M, Marin F (2024)
+Simple numerical X-ray polarization models of reflecting axially symmetric structures around accreting compact objects
+MNRAS, 530, pp.2608-2626 (https://arxiv.org/abs/2310.15647)
+
+Podgorný J (2025)
+The shape and ionization of equatorial matter near compact objects from X-ray polarization reflection signatures
+A&A, 702, A43 (https://arxiv.org/abs/2506.01798)
+
+
+Model parameters
+----------------
+
+* par1 ... PhoIndex 
+  - photon index of the primary power-law X-ray flux
+* par2 ... cos_incl 
+  - cosine of the observer inclination (1.-pole, 0.-disc); with XSET one
+    can recalculate to inclination in degrees
+* par3 ... cone half-opening angle in degrees
+* par4 ... rhorhoin
+  - the skew rho, in the units of rho_in, of the inner walls of the cone
+    between 1 and 10
+* par5 ... xi0
+  - the ionization parameter in erg cm s^{-1} at the inner-most ring of
+    the cone in the equatorial plane
+    -  xi0 >= 5 - it uses the local reflection STOKES tables for partial ionization
+    -  0 < xi0 < 5 - it assumes fully neutral reflection and uses the fully neutral
+       local reflection STOKES tables
+    -  xi0 < 0 - it assumes fully ionized reflection with 100% albedo and uses
+       Chandrasekhar's diffuse reflection prescription; in this case the model is
+       renormalized to X-ray luminosity between 10^(-1.1) and 10^(2.4) keV via
+       the real inner-edge ionization parameter being equal to "-xi0" and via
+       L_X = -xi0 * n_H0 * (rho_in)^2 for a constant density profile with radius,
+       where n_H0 = 10^{15} cm^{-3} as for the table reprocessing and rho_in is
+       the distance between the cone and the center;
+  - with XSET you can calculate L_{2-10 keV} luminosity in erg/s and rho_in in pc,
+    provided the norm value, expected n_H0 value and D_Mpc distance to the source
+    (variables  "NORMVAL", "D_MPC" in Mpc and "NH0"  in cm^{-3}), if additionally
+    the central object's mass is provided in XSET (variable "MASS" in M_sun), then
+    rho_in in r_g is calculated
+* par6 ... beta
+  - the power-law index for the ionization parameter profile across the surface
+    with distance from the source (see Podgorný J., 2025):
+    xi = xi0 * a0 * mu_i * (rho_in / r)^(beta) ; this parameter is a proxy for
+    density profile; keep it frozen at 2 for a constant density across the surface;
+    do not interpolate in this parameter, use only -2, 2, 6 values and do not switch
+    between them within one XSPEC session to prevent excesive memory allocation
+* par7 ... NpNr
+  - a switch between
+    -  = 1 - reflection + primary
+    -  = 0 - reflection only;
+    the primary is only visible if inclination < Theta (the source is unobscured)
+    and maybe switched off if combined in XSPEC with a less phenomenological model
+    of the Comptonized emission; one can obtain the flux reflection fraction
+    with XSET
+* par8 ... pol_deg
+  - anisotropy and intrinsic polarisation degree of the primary radiation
+    -  0 <= pol_deg <= 1 - polarisation degree of isotropic central emission
+    -  = -1 - a particular prescription for anisotropy and polarisation of a
+       slab corona (similar to a typical lamp-post polarisation anisotropy
+       profile) from Model B of Poutanen et al. 2023 (see Podgorný J., 2025, for
+       details); keep par8 frozen, then par9 is not used for this configuration
+* par9 ... chi
+  - intrinsic polarisation angle (in degrees, -90 < chi < 90) of primary radiation
+  - the orientation is degenarate by 180 degrees
+* par10 ... pos_ang
+  - orientation of the system (in degrees, -90 < pos_ang < 90),
+  - the orientation is degenarate by 180 degrees
+* par11 ... zshift
+  - overall redshift
+* par12 ... Stokes
+  - defines the output of the model:
+    - -1: the output is defined according to the XFLT0001 keyword of the 
+          SPECTRUM extension of the data file, where "Stokes:0" means photon 
+          number density flux, "Stokes:1" means Stokes parameter Q devided by 
+          energy and "Stokes:2" means Stokes parameter U devided by energy
+    -  0: array of photon number density flux per bin (array of Stokes parameter 
+          I devided by energy) with the polarisation computations switched off
+    -  1: array of photon number density flux per bin (array of Stokes parameter 
+          I devided by energy), with the polarisation computations switched on
+    -  2: array of Stokes parameter Q devided by energy
+    -  3: array of Stokes parameter U devided by energy
+    -  4: array of Stokes parameter V devided by energy
+    -  5: array of degree of polarisation
+    -  6: array of polarisation angle &psi;=0.5*atan(U/Q)
+    -  7: array of "Stokes" angle 
+          &beta; = 0.5*asin(V/sqrt(Q<sup>2</sup>+U<sup>2</sup>+V<sup>2</sup>))
+    -  8: array of Stokes parameter Q devided by I
+    -  9: array of Stokes parameter U devided by I
+    - 10: array of Stokes parameter V devided by I
+* par13 ... norm
+  - equal to (100*rho_in_pc/D_Mpc)^2 * (n_H0/1e15) where rho_in is the physical
+    distance between the center and the cone in pc, D_Mpc is the distance to the
+    source in Mpc, and n_H0 is the expected density at the inner edge of the cone
+    in cm^{-3};
+  - with XSET you can obtain 2-10 keV luminosity in erg/s for a given norm (re-enter
+    the norm value as XSET variable "NORMVAL") and D_Mpc in Mpc (XSET variable
+    "D_MPC"); and additionally rho_in in pc for a given expected n_H0 in cm^{-3}
+    (XSET variable "NH0") and rho_in in r_g, provided additionally the central
+    object's mass (XSET variable "MASS" in M_sun)
+  - should be frozen to unity in case the par12 (Stokes) is set to 5-10
+
+
+Further output of the model
+---------------------------
+
+When the fit is finished the XSPEC command xset can be used to see the following 
+additional information of the model:
+
+* Theta_degrees
+  - the true half-opening angle Theta converted to degrees measured from the rotation axis
+* inc_degrees
+  - inclination in degrees measured from the rotation axis, i.e. "acos(cos_incl)/PI*180."
+* L
+  - if one re-enters the current normalization value as XSET variable "NORMVAL" and
+    the distance to the source in Mpc as XSET variable "D_MPC", then the model provides
+    an estimate of the intrinsic 2-10 keV luminosity L in erg/s, using
+    L_X = abs(xi0) * n_H0 * (rho_in)^2 = abs(xi0) * NORMVAL * (D_MPC)^2 * (pc/cm)^2 * 1e11
+* rho_in_pc
+  - if one re-enters the current normalization value as XSET variable "NORMVAL", if one
+    specifies the distance to the source in Mpc as XSET variable "D_MPC", and if one
+    specifies the expected density at the inner edge of the cone in cm^{-3} as XSET
+    variable "NH0", then the model provides the distance rho_in between the cone and
+    the center in pc
+* rho_in_r_g
+  - if one additionally specifies the central object's mass as XSET variable "MASS", then
+    the model provides the distance rho_in between the cone and the center in r_g = GM/c^2
+* RF
+  - reflection fraction: the ratio of the reflected and total (primary + reflected)
+    energy-flux in the used model energy range
+
+
+Required files
+--------------
+
+* Source code files
+  - xsstokes_cone.c
+  - lmodel-stcone.dat
+* reprocessing tables
+  (must be stored in a directory called "tables", for reprocessing of photons in distant
+  opaque cone-shaped structure, more details in Podgorný J. et al. (2024), Podgorný J. (2025))
+  - 32287641.zip (https://doi.org/10.6084/m9.figshare.32287641)
+* Theta limit function
+  - visbility_line.txt
+  - visbility_line_c.txt
+
+Installation and usage in XSPEC
+-------------------------------
+
+1. Download the source code files
+   into a directory where you want to install the model, e.g. '/path/to/stokes_cone-master/'
+
+2. Download the FITS files 
+   32287641.zip (https://doi.org/10.6084/m9.figshare.32287641)
+   with the tables in a directory called "tables" within the directory with stokes_cone,
+   i.e. '/path/to/stokes_cone-master/tables'; not all tables are required if one uses only
+   part of the parameter space (see above)
+
+3. Unzip the reflection tables with polarisation information, e.g. by the command:
+
+   unzip 32287641.zip
+   
+4. Compile the code inside XSPEC (needed to be done only once):
+
+   The code is compiled inside XSPEC with the following command (assuming all
+   the source files and FITS tables inside a subdirectory "tables" are in the directory
+   '/path/to/stokes_cone-master'):
+
+   initpackage stcone lmodel-stcone.dat /path/to/stokes_cone-master
+
+   Note:
+   Your XSPEC installation must have been originally installed from the source 
+   code distribution. Local models, like stokes_cone, cannot be used if the XSPEC
+   was originally installed from the pre-compiled binary distribution.
+
+5. Load the stokes_cone model into XSPEC:
+
+   To use the stokes_cone model inside XSPEC, first the model package needs to be
+   loaded and also setup a directory containing the stokes_cone set:
+
+   lmod stcone /path/to/stokes_cone-master
+   xset XSDIR /path/to/stokes_cone-master
+
+6. Then the stokes_cone model may be used in the usual way, e.g.:
+
+   mo stcone
+
+   Note:
+   In case of segmentation fault, one may need to increase the stack size before 
+   launching XSPEC, e.g. with the command:
+
+   ulimit -s unlimited
+
+   or 
+
+   ulimit -s 65532
+
+
+Viewing the model in XSPEC
+-------------------------------
+
+One usually needs to have polarisation data sets loaded for all three stokes
+parameters to view the polarisation properties predicted by a model inside XSPEC.
+The model is then shown in the energy range covered by, and with the energy binning
+of, these data sets. To overcome these disadvantages, the stokes_cone model provides
+a parameter (par12) that defines the output of the model, e.g. to show the model
+prediction for the polarisation degree, one needs to set par12 to 5, see Section
+Model parameters. In this case, dummy response may be used without any data loaded,
+e.g. 'dummyrsp 0.1 100. 300 log'. Then the model may be viewed (after it has been
+loaded in XSPEC) in a usual way using 'plot model'. Note that when showing polarisation
+degree, angle and normalised Stokes parameters, i.e. when par12 is set to 5-10,
+the normalisation of the model needs to be set to unity.
+
+To use the original way of showing results of polarisation model inside XSPEC, we
+also provide a fake null data sets for all three Stokes parameters, i, q and u,
+binned in 300 channels, together with corresponding unit response matrices, rmf, arf
+and mrf, defined in 0.1 to 100 keV in 300 channels, see
+fake_null_iqu_300ch.tar.gz (https://owncloud.asu.cas.cz/index.php/s/Flk6cwYLISmw0D5).
+One can see the model predicted polarisation properties in the following way:
+
+1. Download the package containing the fake null data and unit repsonses -
+   fake_null_iqu_300ch.tar.gz (https://owncloud.asu.cas.cz/index.php/s/Flk6cwYLISmw0D5)
+
+2. Uncompress the package, e.g. by the command:
+
+   tar -xzf fake_null_iqu_300ch.tar.gz
+
+   This will uncompress the following files:
+
+   - fake_null_i_300ch.pha
+   - fake_null_q_300ch.pha
+   - fake_null_u_300ch.pha
+   - fake_unit_response_0.1-100keV_300ch.rmf
+   - fake_unit_response_0.1-100keV_300ch.arf
+   - fake_unit_response_0.1-100keV_300ch.mrf
+
+3. Load the fake null data into XSPEC:
+
+   data 1 fake_null_i_300ch.pha
+   data 2 fake_null_q_300ch.pha
+   data 3 fake_null_u_300ch.pha
+
+   the fake unit responses will be automatically loaded. For convenience, change also the energy range of the data
+
+   ignore *:**-0.105
+
+4. Set stokes_cone par12 to -1
+
+   To be able to use the traditional way of using the polarisation data with the model in XSPEC, one needs to set the stokes_cone parameter par12 to -1:
+
+   newpar 12 -1 -1 -1 -1 10 10
+
+   Here, we have also redefined the boundaries of this parameter in case -1 value is not allowed by the default settings.
+
+5. View the polarisation degree and angle in XSPEC:
+
+   plot polfrac
+   plot polangle
+
+   Note that the model has to be loaded into XSPEC first, as described in Section
+   Installation and usage in XSPEC.
