@@ -47,8 +47,10 @@ to the diffuse Chandrasekhar's electron-scattering atmosphere is allowed.
 In the case of stokes_cone, reflection is calculated from an optically-thick
 double-cone shaped toroidal structure, representing e.g. an opaque AGN torus,
 broad-line region, or a super-Eddington accretion funnel or optically thick
-wind, illuminated by a central hot X-ray corona. More details on the
-reflection model that was computed using the routine torus_integrator.py are
+wind applicable to accreting stellar-mass black holes or neutron stars as well.
+The distant components are illuminated by a central hot X-ray corona
+or a neutron-star boundary/spreading layer. More details on the reflection
+model that was computed using the routine torus_integrator.py are
 given in Podgorný J. et al. (2024) and Podgorný J. (2025). Apart from the
 incident power-law index Gamma and its polarisation degree and angle, the
 model then also depends on the cosine of observer's inclination angle, the
