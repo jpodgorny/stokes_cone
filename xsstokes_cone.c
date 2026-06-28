@@ -344,6 +344,15 @@ pos_ang = param[9]/180.*PI;
 redshift = (float) param[10];
 stokes = (int) param[11];
 
+// Zero the output array up-front. The int return value of this routine is
+// discarded by XSPEC's C-model wrapper, so on any early "return -1" path
+// (invalid D_MPC/NORMVAL/NH0/MASS xset value, invalid redshift, ...) photar
+// would otherwise retain stale flux from a previous call and the fit would
+// silently proceed on garbage. Zeroing here makes any such failure show up as
+// a visible (zero) model. On every successful path photar is fully overwritten
+// below, so results are unchanged.
+for (ie = 0; ie < ne; ie++) photar[ie] = 0.0;
+
 if (strlen(xsdir) == 0) {
     snprintf(xi_files[0][0], sizeof(xi_files[0][0]),
              "tables/stokes-xi-iso-UNPOL-cone-beta2.fits");
